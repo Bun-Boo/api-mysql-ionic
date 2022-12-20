@@ -18,17 +18,26 @@ app.get("/", (req, res) => {
 app.get("/students", (req, res) => {
   const query = "SELECT * FROM students";
   db.query(query, (err, data) => {
-    if (err) return res.status(404).json("error");
+    if (err) return res.status(404).json(err);
     return res.status(200).json(data);
   });
 });
 
 //search by Name
-app.get("/students/search/", (req, res) => {
-  const q = req.query.name;
-  const query = `SELECT * FROM students WHERE name LIKE '%${q}%' `;
+app.get("/students/search", (req, res) => {
+  const q = req.query.search;
+  const p = req.query.sort;
+
+  let query = `SELECT * FROM students WHERE name LIKE '%${q}%' or id LIKE '%${q}%'`;
+
+  if (p === "asc") {
+    query = `SELECT * FROM students WHERE name LIKE '%${q}%' or id LIKE '%${q}%' ORDER BY score ASC`;
+  } else if (p === "desc") {
+    query = `SELECT * FROM students WHERE name LIKE '%${q}%' or id LIKE '%${q}%' ORDER BY score DESC`;
+  }
   db.query(query, (err, data) => {
     if (err) return res.status(404).json(err);
+    console.log(data);
     return res.status(200).json(data);
   });
 });
@@ -72,7 +81,8 @@ app.post("/students/create", (req, res) => {
     req.body.score,
   ];
   db.query(query, [values], (err, data) => {
-    if (err) return res.status(404).json("error");
+    if (err) return res.status(404).json(err);
+    console.log(values);
     return res.status(200).json("Inserted successfully");
   });
 });
@@ -89,15 +99,21 @@ app.delete("/students/:id", (req, res) => {
 app.put("/students/:id", (req, res) => {
   const studentId = req.params.id;
   const query =
-    "UPDATE students SET `name` = ?, `address` = ? , `avatar` = ? , `score` = ? WHERE id = ?  ";
+    "UPDATE students SET `id` = ?,  `name` = ?, `address` = ? , `avatar` = ? , `score` = ? WHERE id = ?  ";
   const values = [
+    req.body.id,
     req.body.name,
     req.body.address,
     req.body.avatar,
     req.body.score,
+    studentId,
   ];
   db.query(query, [...values, studentId], (err, data) => {
-    if (err) return res.status(404).json(err);
+    if (err) {
+      console.log(data);
+      return res.status(404).json(err);
+    }
+    console.log(values);
     return res.status(200).json("updated successfully");
   });
 });
